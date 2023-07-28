@@ -1,0 +1,290 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 07.04.2022 22:42:49
+// Design Name: 
+// Module Name: washing_m
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+
+module wm(clk,rst,c, cap, dry_wash, TIMER, soak,rinse, spin, wash,pause);
+ input clk,rst,c,cap,dry_wash,TIMER;
+ output reg soak,rinse,spin,wash,pause;
+ reg[2:0] c_st, n_st;
+
+ 
+ parameter IDLE = 3'b000,
+           SOAK = 3'b001,
+             WASH=3'b010,
+             RINSE=3'b011,
+             WASH_A=3'b100,
+             RINSE_A=3'b101,
+             SPIN=3'b110,
+             PAUSH=3'b111;
+
+always @(c_st or c or dry_wash or cap or TIMER)
+begin
+   case (c_st)
+     IDLE:
+if(c==1)
+          begin
+          n_st=SOAK;
+          soak=1;
+          rinse=0;
+          spin=0;
+          wash=0;
+          pause=0;
+          end
+else
+
+          begin
+          n_st=c_st;
+          soak=0;
+          rinse=0;
+          spin=0;
+          wash=0;
+          pause=0;
+          end
+
+SOAK:
+if(TIMER==1)
+
+          begin
+          n_st=WASH;
+          soak=0;
+          rinse=0;
+          spin=0;
+          wash=1;
+          pause=0;
+          end
+else
+          begin
+          n_st=c_st;
+          soak=1;
+          rinse=0;
+          spin=0;
+          wash=0;
+          pause=0;
+         end
+WASH:
+if(TIMER==1)
+
+          begin
+          n_st=RINSE;
+          soak=0;
+          rinse=1;
+          spin=0;
+          wash=0;
+          pause=0;
+          end
+else
+          begin
+          n_st=c_st;
+          soak=0;
+          rinse=0;
+          spin=0;
+          wash=1;
+          pause=0;
+          end
+RINSE:
+if(TIMER==1 && dry_wash==1)
+
+          begin
+          n_st=WASH_A;
+          soak=0;
+          rinse=0;
+          spin=0;
+          wash=1;
+          pause=0;
+          end
+else if(TIMER==1 && dry_wash==0)
+
+          begin
+          n_st=SPIN;
+          soak=0;
+          rinse=0;
+          spin=1;
+          wash=0;
+          pause=0;
+          end
+else
+          begin
+          n_st=c_st;
+          soak=0;
+          rinse=1;
+          spin=0;
+          wash=0;
+          pause=0;
+          end
+WASH_A:
+if(TIMER==1)
+
+          begin
+          n_st=RINSE_A;
+          soak=0;
+          rinse=1;
+          spin=0;
+          wash=0;
+          pause=0;
+          end
+else
+          begin
+          n_st=c_st;
+          soak=0;
+          rinse=0;
+          spin=0;
+          wash=1;
+          pause=0;
+          end
+
+RINSE_A:
+if(TIMER==1)
+          begin
+          n_st=SPIN;
+          soak=0;
+          rinse=0;
+          spin=1;
+          wash=0;
+          pause=0;
+          end
+else
+          begin
+          n_st=c_st;
+          soak=0;
+          rinse=1;
+          spin=0;
+          wash=0;
+          pause=0;
+          end
+SPIN:
+if(TIMER==0 && cap==1)
+          begin
+          n_st=PAUSH;
+          soak=0;
+          rinse=0;
+          spin=0;
+          wash=0;
+          pause=1;
+          end
+else if(TIMER==1)
+          begin
+          n_st=IDLE;
+          soak=0;
+          rinse=0;
+          spin=0;
+          wash=0;
+          pause=0;
+          end
+else
+          begin
+          n_st=c_st;
+          soak=0;
+          rinse=0;
+          spin=1;
+          wash=0;
+          pause=0;
+          end
+PAUSH:
+if(cap==0)
+          begin
+          n_st=SPIN;
+          soak=0;
+          rinse=0;
+          spin=1;
+          wash=0;
+          pause=0;
+          end
+else
+          begin
+          n_st=c_st;
+          soak=0;
+          rinse=0;
+          spin=0;
+          wash=0;
+          pause=1;
+
+          end
+     default:
+n_st=IDLE;
+   endcase
+  end
+always @(posedge clk or negedge rst)
+begin
+   if (rst)
+     c_st <= IDLE;
+    else
+     c_st <= n_st;
+ end
+endmodule
+
+
+
+
+
+
+
+///testbench
+
+
+
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 07.05.2022 23:01:51
+// Design Name: 
+// Module Name: tb
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module tb();
+reg clk,reset,c,cap,dry_wash,TIMER;
+wire soak,rinse,spin,wash,pause;
+washing_m uut(clk,reset,c,cap,dry_wash,TIMER,soak,rinse,spin,wash,pause);
+always
+#5 clk=~clk;
+initial
+begin
+
+$monitor($time, ,,"c=%b",clk,,"timer=%b",c,,"l=%b",cap,,"d=%b",dry_wash,,"TIMER=%b",TIMER,,"s=%b",soak,,"r=%b",rinse,,"S=%b",spin,,"w=%b",wash,,"p=%b",pause);
+reset=0       ;clk=0;c=0;cap=0;dry_wash=0;TIMER=0;
+#10 c=1;
+#10 TIMER=1;c=0;
+#20 dry_wash=1;
+#30 cap=1;dry_wash=0;TIMER=0;
+#10 cap=0;TIMER=0;
+#10 TIMER=1;cap=0;
+#10 TIMER=1;
+#10 c=1;TIMER=0;
+end
+
+initial
+#90 $finish ;
+
+endmodule
